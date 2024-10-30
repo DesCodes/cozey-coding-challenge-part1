@@ -9,21 +9,21 @@ import {
 } from "./styles";
 import axios from "axios";
 import { Collection } from "../Common/Collection";
-import { ConfigSelectionData, FetchDataResponse, handleconfig } from "./types";
+import { ConfigSelectionData, FetchDataResponse, handleconfig, SeatingConfigProps } from "./types";
 import { useCartMutation } from "../hooks/useCartMutation";
 import { calculateCozeyCarePrice } from "../helpers/calculateCozeyCarePrice";
+import ColorSelector from "../Common/ColorSelector";
 import React from "react";
 
-export const SeatingConfigurator = ({
+export const SeatingConfigurator: React.FC<SeatingConfigProps> = ({
   collectionTitle,
   seating,
   config,
   price,
   colorsData,
   configId,
-}: any) => {
+}) => {
   const router = useRouter();
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [configSelected, setConfigSelected] = useState<ConfigSelectionData>(
     {} as ConfigSelectionData
   );
@@ -34,26 +34,30 @@ export const SeatingConfigurator = ({
 
   const { addToCart } = useCartMutation();
 
-  const [counter, setCounter] = useState(0);
-
   useEffect(() => {
     const fetchAdditionalConfig = async () => {
       setIsLoading(true);
-      const response = await axios.get<FetchDataResponse>(
-        /api/configuration/${configId}
-      );
-      setAdditionalConfig(response.data);
-      setIsLoading(false);
+
+      try {
+        const response = await axios.get<FetchDataResponse>(`
+          /api/configuration/${configId}
+        `);
+        setAdditionalConfig(response.data);
+      } catch (error) {
+        setErrorMessage("error, can't fetch");
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchAdditionalConfig();
-  }, []);
+  }, [configId]);
 
   useEffect(() => {
     if (seating) {
       setConfigSelected({
-        color: seating.option1OptionsCollection[0]?.value,
-        seating: seating.sofa.option2OptionsCollection[0],
+        color: seating.option1OptionsCollection[0]?.value || "",
+        seating: seating.sofa.option2OptionsCollection[0]?.value || "",
       });
     }
   }, [seating]);
@@ -113,7 +117,7 @@ export const SeatingConfigurator = ({
             <select
               value={configSelected.seating?.value || ""}
               onChange={(e) =>
-                handleConfig({ seating: { value: e.target.value } })
+                handleConfig({ seating: e.target.value })
               }
             >
               {additionalConfig.seatingOptions.map((option) => (
